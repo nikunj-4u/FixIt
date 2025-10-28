@@ -27,10 +27,18 @@ const userSchema = new mongoose.Schema({
   studentId: {
     type: String,
     unique: true,
-    sparse: true
+    sparse: true,
+    set: function(v) {
+      if (typeof v === 'string' && v.trim() === '') return undefined;
+      return v;
+    }
   },
   roomNumber: {
-    type: String
+    type: String,
+    set: function(v) {
+      if (typeof v === 'string' && v.trim() === '') return undefined;
+      return v;
+    }
   },
   phone: {
     type: String,
