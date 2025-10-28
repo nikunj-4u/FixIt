@@ -44,7 +44,8 @@ export const ComplaintProvider = ({ children }) => {
 
   // Set base URL for API
   useEffect(() => {
-    axios.defaults.baseURL = 'http://localhost:5001';
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    axios.defaults.baseURL = apiBaseUrl;
   }, []);
 
   const fetchComplaints = useCallback(async (filters = {}) => {
@@ -52,7 +53,7 @@ export const ComplaintProvider = ({ children }) => {
     try {
       console.log('Fetching complaints with filters:', filters);
       const params = new URLSearchParams(filters);
-      const url = `/api/complaints?${params}`;
+      const url = `/complaints?${params}`;
       console.log('Making request to:', url);
       const response = await axios.get(url);
       console.log('Complaints response:', response.data);
@@ -68,8 +69,18 @@ export const ComplaintProvider = ({ children }) => {
 
   const createComplaint = useCallback(async (complaintData) => {
     try {
-      console.log('Creating complaint with data:', complaintData);
-      const response = await axios.post('/api/complaints', complaintData);
+      // Normalize images to string URLs per backend schema
+      const normalizedImages = Array.isArray(complaintData.images)
+        ? complaintData.images.map((img) => {
+            if (typeof img === 'string') return img;
+            if (img && typeof img === 'object' && img.url) return img.url;
+            return String(img || '');
+          }).filter(Boolean)
+        : [];
+
+      const payload = { ...complaintData, images: normalizedImages };
+      console.log('Creating complaint with data:', payload);
+      const response = await axios.post('/complaints', payload);
       console.log('Complaint created successfully:', response.data);
       dispatch({ type: 'ADD_COMPLAINT', payload: response.data.complaint });
       return { success: true, complaint: response.data.complaint };
@@ -83,7 +94,7 @@ export const ComplaintProvider = ({ children }) => {
 
   const updateComplaintStatus = useCallback(async (complaintId, status, resolution = '') => {
     try {
-      const response = await axios.patch(`/api/complaints/${complaintId}/status`, {
+      const response = await axios.patch(`/complaints/${complaintId}/status`, {
         status,
         resolution
       });
@@ -98,7 +109,7 @@ export const ComplaintProvider = ({ children }) => {
 
   const assignComplaint = useCallback(async (complaintId, assignedTo) => {
     try {
-      const response = await axios.patch(`/api/complaints/${complaintId}/assign`, {
+      const response = await axios.patch(`/complaints/${complaintId}/assign`, {
         assignedTo
       });
       dispatch({ type: 'UPDATE_COMPLAINT', payload: response.data.complaint });
@@ -112,7 +123,7 @@ export const ComplaintProvider = ({ children }) => {
 
   const addComment = useCallback(async (complaintId, comment) => {
     try {
-      const response = await axios.post(`/api/complaints/${complaintId}/comments`, {
+      const response = await axios.post(`/complaints/${complaintId}/comments`, {
         comment
       });
       dispatch({ type: 'UPDATE_COMPLAINT', payload: response.data.complaint });
@@ -127,21 +138,47 @@ export const ComplaintProvider = ({ children }) => {
   const fetchCategories = useCallback(async () => {
     try {
       console.log('Fetching categories...');
-      const response = await axios.get('/api/categories');
-      console.log('Categories fetched:', response.data);
-      dispatch({ type: 'SET_CATEGORIES', payload: response.data });
+      const response = await axios.get('/categories');
+      let apiCategories = Array.isArray(response.data) ? response.data : [];
+      // Fallback to default enum categories if API returns none
+      if (apiCategories.length === 0) {
+        apiCategories = [
+          { _id: 'mess', name: 'mess', value: 'mess' },
+          { _id: 'internet', name: 'internet', value: 'internet' },
+          { _id: 'water', name: 'water', value: 'water' },
+          { _id: 'electricity', name: 'electricity', value: 'electricity' },
+          { _id: 'room_maintenance', name: 'room_maintenance', value: 'room_maintenance' },
+          { _id: 'security', name: 'security', value: 'security' },
+          { _id: 'other', name: 'other', value: 'other' }
+        ];
+      }
+      console.log('Categories resolved:', apiCategories);
+      dispatch({ type: 'SET_CATEGORIES', payload: apiCategories });
     } catch (error) {
       console.error('Error fetching categories:', error);
       dispatch({
         type: 'SET_ERROR',
         payload: error.response?.data?.message || 'Failed to fetch categories'
       });
+      // Provide defaults on error as well
+      dispatch({
+        type: 'SET_CATEGORIES',
+        payload: [
+          { _id: 'mess', name: 'mess', value: 'mess' },
+          { _id: 'internet', name: 'internet', value: 'internet' },
+          { _id: 'water', name: 'water', value: 'water' },
+          { _id: 'electricity', name: 'electricity', value: 'electricity' },
+          { _id: 'room_maintenance', name: 'room_maintenance', value: 'room_maintenance' },
+          { _id: 'security', name: 'security', value: 'security' },
+          { _id: 'other', name: 'other', value: 'other' }
+        ]
+      });
     }
   }, []);
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await axios.get('/api/complaints/stats/overview');
+      const response = await axios.get('/complaints/stats/overview');
       dispatch({ type: 'SET_STATS', payload: response.data });
     } catch (error) {
       dispatch({

@@ -29,7 +29,7 @@ const Register = () => {
     studentId: '',
     roomNumber: ''
   });
-  const { register, isAuthenticated, loading, error } = useAuth();
+  const { register, isAuthenticated, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,11 +38,18 @@ const Register = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Clear auth error when switching to this screen or when user edits inputs
+  useEffect(() => {
+    clearError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (error) clearError();
   };
 
   const handleSubmit = async (e) => {

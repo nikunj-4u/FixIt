@@ -22,6 +22,13 @@ router.post('/register', [
 
     const { name, email, password, phone, role = 'student', studentId, roomNumber } = req.body;
 
+    // For student role, ensure studentId and roomNumber are provided
+    if (role === 'student') {
+      if (!studentId || !roomNumber) {
+        return res.status(400).json({ message: 'studentId and roomNumber are required for student role' });
+      }
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {

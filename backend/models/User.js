@@ -26,17 +26,11 @@ const userSchema = new mongoose.Schema({
   },
   studentId: {
     type: String,
-    required: function() {
-      return this.role === 'student';
-    },
     unique: true,
     sparse: true
   },
   roomNumber: {
-    type: String,
-    required: function() {
-      return this.role === 'student';
-    }
+    type: String
   },
   phone: {
     type: String,

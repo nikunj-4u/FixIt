@@ -118,9 +118,20 @@ router.patch('/:id/status', [adminAuth, body('status').isIn(['pending', 'in_prog
     }
 
     const { status, resolution } = req.body;
+
+    // Load existing complaint to enforce final-state lock
+    const existing = await Complaint.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    if (existing.status === 'resolved' || existing.status === 'closed') {
+      return res.status(400).json({ message: 'Status cannot be changed after resolution/closure' });
+    }
+
     const updateData = { status };
 
-    if (status === 'resolved') {
+    if (status === 'resolved' || status === 'closed') {
       updateData.resolvedAt = new Date();
       updateData.resolvedBy = req.user.userId;
       if (resolution) updateData.resolution = resolution;

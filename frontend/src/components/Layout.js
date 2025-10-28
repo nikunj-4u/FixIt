@@ -100,6 +100,10 @@ const Layout = () => {
             }}
             selected={location.pathname === item.path}
             sx={{
+              cursor: 'pointer',
+              '&:hover': {
+                cursor: 'pointer'
+              },
               '&.Mui-selected': {
                 backgroundColor: 'primary.light',
                 '&:hover': {

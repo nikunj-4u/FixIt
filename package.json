@@ -1,0 +1,11 @@
+{
+  "name": "fixit-root",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev --prefix backend & npm start --prefix frontend",
+    "start:backend": "npm run dev --prefix backend",
+    "start:frontend": "npm start --prefix frontend"
+  }
+}
+
+

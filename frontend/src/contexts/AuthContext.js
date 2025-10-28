@@ -35,6 +35,8 @@ const authReducer = (state, action) => {
       };
     case 'CLEAR_ERROR':
       return { ...state, error: null };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, loading: false };
     default:
       return state;
   }
@@ -62,8 +64,9 @@ export const AuthProvider = ({ children }) => {
 
   // Set base URL for API
   useEffect(() => {
-    axios.defaults.baseURL = 'http://localhost:5001';
-    console.log('API base URL set to:', axios.defaults.baseURL);
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    axios.defaults.baseURL = apiBaseUrl;
+    console.log('API base URL set to:', apiBaseUrl);
   }, []);
 
   // Check if user is logged in on app start
@@ -74,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           console.log('Making API call to /api/auth/me');
-          const response = await axios.get('/api/auth/me');
+          const response = await axios.get('/auth/me');
           console.log('Auth check response:', response.data);
           dispatch({
             type: 'LOGIN_SUCCESS',
@@ -98,7 +101,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Attempting login with:', { email, password });
       console.log('API URL:', axios.defaults.baseURL);
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await axios.post('/auth/login', { email, password });
       console.log('Login response:', response.data);
       const { token, user } = response.data;
       
@@ -111,7 +114,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       dispatch({
         type: 'LOGIN_FAILURE',
         payload: errorMessage
@@ -123,7 +126,7 @@ export const AuthProvider = ({ children }) => {
   const register = useCallback(async (userData) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await axios.post('/auth/register', userData);
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -133,7 +136,10 @@ export const AuthProvider = ({ children }) => {
       });
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      // Prefer detailed validation messages from backend
+      const backendMessage = error.response?.data?.message;
+      const validationErrors = error.response?.data?.errors;
+      const errorMessage = validationErrors?.[0]?.msg || backendMessage || error.message || 'Registration failed';
       dispatch({
         type: 'LOGIN_FAILURE',
         payload: errorMessage

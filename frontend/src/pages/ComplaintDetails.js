@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -53,15 +54,11 @@ const ComplaintDetails = () => {
 
   const fetchComplaint = async () => {
     try {
-      const response = await fetch(`/api/complaints/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
+      const { data } = await axios.get(`/complaints/${id}`);
       setComplaint(data);
     } catch (error) {
       console.error('Error fetching complaint:', error);
+      setComplaint(null);
     } finally {
       setLoading(false);
     }
@@ -166,6 +163,20 @@ const ComplaintDetails = () => {
               {complaint.description}
             </Typography>
 
+            {Array.isArray(complaint.images) && complaint.images.length > 0 && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  Images
+                </Typography>
+                <Box display="flex" flexWrap="wrap" gap={2}>
+                  {complaint.images.map((src, idx) => (
+                    <img key={idx} src={src} alt={`complaint-${idx}`} style={{ width: 160, height: 120, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd' }} />
+                  ))}
+                </Box>
+              </>
+            )}
+
             <Divider sx={{ my: 2 }} />
 
             <Grid container spacing={2}>
@@ -203,7 +214,7 @@ const ComplaintDetails = () => {
               </Grid>
             </Grid>
 
-            {complaint.resolution && (
+            {(complaint.resolution || complaint.resolvedAt || complaint.resolvedBy) && (
               <>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="h6" gutterBottom>
@@ -212,11 +223,18 @@ const ComplaintDetails = () => {
                 <Typography variant="body1">
                   {complaint.resolution}
                 </Typography>
-                {complaint.resolvedAt && (
-                  <Typography variant="caption" color="text.secondary">
-                    Resolved on {formatDate(complaint.resolvedAt)}
-                  </Typography>
-                )}
+                <Box>
+                  {complaint.resolvedAt && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Resolved on {formatDate(complaint.resolvedAt)}
+                    </Typography>
+                  )}
+                  {complaint.resolvedBy && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Resolved by {complaint.resolvedBy.name} ({complaint.resolvedBy.role})
+                    </Typography>
+                  )}
+                </Box>
               </>
             )}
           </Paper>
@@ -336,6 +354,7 @@ const ComplaintDetails = () => {
                     value={statusUpdate}
                     onChange={(e) => setStatusUpdate(e.target.value)}
                     sx={{ mb: 1 }}
+                    disabled={complaint.status === 'resolved' || complaint.status === 'closed'}
                   >
                     <MenuItem value="pending">Pending</MenuItem>
                     <MenuItem value="in_progress">In Progress</MenuItem>
@@ -359,7 +378,7 @@ const ComplaintDetails = () => {
                     fullWidth
                     variant="contained"
                     onClick={handleStatusUpdate}
-                    disabled={!statusUpdate}
+                    disabled={!statusUpdate || complaint.status === 'resolved' || complaint.status === 'closed'}
                   >
                     Update Status
                   </Button>

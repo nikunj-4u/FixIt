@@ -33,7 +33,8 @@ const CreateComplaint = () => {
     category: '',
     priority: 'medium',
     roomNumber: '',
-    images: []
+    images: [],
+    imageUrl: ''
   });
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
@@ -93,6 +94,9 @@ const CreateComplaint = () => {
     if (!formData.roomNumber.trim()) {
       newErrors.roomNumber = 'Room number is required';
     }
+    if (formData.imageUrl && !/^https?:\/\//i.test(formData.imageUrl)) {
+      newErrors.imageUrl = 'Image URL must start with http:// or https://';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -109,7 +113,11 @@ const CreateComplaint = () => {
     }
 
     console.log('Form validation passed, creating complaint...');
-    const result = await createComplaint(formData);
+    const payload = {
+      ...formData,
+      images: formData.imageUrl ? [...formData.images, formData.imageUrl] : formData.images
+    };
+    const result = await createComplaint(payload);
     console.log('Create complaint result:', result);
     
     if (result.success) {
@@ -246,6 +254,17 @@ const CreateComplaint = () => {
               <Typography variant="h6" gutterBottom>
                 Attach Images (Optional)
               </Typography>
+              <TextField
+                fullWidth
+                label="Image URL (optional)"
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleChange}
+                error={!!errors.imageUrl}
+                helperText={errors.imageUrl}
+                placeholder="https://example.com/image.jpg"
+                sx={{ mb: 2 }}
+              />
               <input
                 accept="image/*"
                 style={{ display: 'none' }}

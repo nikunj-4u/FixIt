@@ -27,7 +27,7 @@ const Login = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isAuthenticated, loading, error } = useAuth();
+  const { login, isAuthenticated, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +41,7 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (error) clearError();
   };
 
   const handleSubmit = async (e) => {
@@ -144,7 +145,7 @@ const Login = () => {
               {loading ? <CircularProgress size={24} /> : 'Sign In'}
             </Button>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2">
+              <Typography variant="body2" onClick={clearError}>
                 Don't have an account?{' '}
                 <Link component={RouterLink} to="/register" variant="body2">
                   Sign up here
