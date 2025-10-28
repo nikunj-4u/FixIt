@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -46,16 +47,11 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams(filters);
-      const response = await fetch(`/api/users?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setUsers(data.users);
+      const { data } = await axios.get('/users', { params: filters });
+      setUsers(data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -68,18 +64,8 @@ const AdminUsers = () => {
 
   const handleStatusToggle = async (userId, isActive) => {
     try {
-      const response = await fetch(`/api/users/${userId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ isActive })
-      });
-      
-      if (response.ok) {
-        fetchUsers(); // Refresh the list
-      }
+      await axios.patch(`/users/${userId}/status`, { isActive });
+      fetchUsers();
     } catch (error) {
       console.error('Error updating user status:', error);
     }
